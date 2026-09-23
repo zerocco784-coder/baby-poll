@@ -7,7 +7,7 @@
 
 <meta property="og:type" content="website">
 <meta property="og:title" content="럭키의 성별은?? 🍼">
-<meta property="og:description" content="9월 25일 금요일 결과 발표! 맞히신 분께는 작은 선물이 있어요.">
+<meta property="og:description" content="9월 24일(목) 오후 6시까지 투표! 맞히신 분께는 작은 선물이 있어요.">
 <meta name="description" content="태명 럭키 — 아기 성별 맞추기 투표. 9월 25일 결과 발표">
 <meta name="theme-color" content="#FDF7F8">
 
@@ -84,6 +84,10 @@
   .lede { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 34ch; }
   .gift { margin-top: 4px; display: inline-flex; align-items: center; gap: 8px; background: var(--gift-soft); border: 1px solid var(--gift-line); color: var(--gift); font-weight: 700; font-size: 14px; padding: 11px 20px; border-radius: 99px; box-shadow: var(--shadow-s); }
   .gift .em { font-size: 17px; }
+  .deadline { margin: 2px 0 0; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .deadline b { color: var(--ink); font-weight: 700; }
+  .deadline .left { color: var(--girl); font-weight: 700; }
+  .deadline.closed { color: var(--muted); }
 
   /* cards */
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 20px; box-shadow: var(--shadow-m); }
@@ -103,6 +107,11 @@
   .dday { flex: none; text-align: right; }
   .dday .n { font-family: "Jua", sans-serif; font-size: 27px; line-height: 1.1; color: var(--gift); font-variant-numeric: tabular-nums; }
   .dday .l { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .live-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 18px 14px; border-top: 1px solid var(--line); text-decoration: none; color: var(--ink); transition: background .15s ease; }
+  .live-link:hover { background: var(--surface-2); }
+  .live-link .l1 { font-family: "Jua", sans-serif; font-size: 15px; }
+  .live-link .l2 { font-size: 12px; color: var(--muted); }
+  .live-link .go { flex: none; font-size: 12.5px; font-weight: 700; color: #fff; background: linear-gradient(100deg, #F58529, #DD2A7B 55%, #8134AF); padding: 8px 13px; border-radius: 99px; white-space: nowrap; }
 
   /* 집계 */
   .tally { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
@@ -229,6 +238,7 @@
     <p class="sub"><span class="g">딸</span>일까 <span class="b">아들</span>일까 🍼</p>
     <p class="lede">이름 적고 한 표만 주세요. 이유도 남겨주시면 더 좋고요 😊</p>
     <div class="gift"><span class="em">🎁</span> 맞히신 분께는 작은 선물이 있어요!</div>
+    <p class="deadline" id="deadline">⏰ 투표 마감 <b>9월 24일 (목) 오후 6시</b></p>
   </header>
 
   <!-- 초음파 + D-day -->
@@ -244,6 +254,13 @@
         <div class="l" id="ddayLabel">9월 25일 (금) 결과 발표</div>
       </div>
     </div>
+    <a class="live-link" href="https://www.instagram.com/hyunbbyu__" target="_blank" rel="noopener">
+      <div>
+        <div class="l1">📺 결과는 인스타 라이브로!</div>
+        <div class="l2">9월 25일 (금) · @hyunbbyu__</div>
+      </div>
+      <span class="go">라이브 보러가기</span>
+    </a>
   </section>
 
   <!-- 실시간 현황 -->
@@ -313,6 +330,12 @@
       <span class="gift-mini">🎁 선물 대상에 들어가셨어요</span>
       <button type="button" class="linkbtn" id="redo">역시 마음이 바뀌었어요</button>
     </div>
+
+    <div class="voted" id="closedBox" hidden>
+      <span class="mine">투표가 마감됐어요 🙏</span>
+      <p class="sub2">참여해주신 모든 분들 감사해요!<br>결과는 9월 25일 (금) 인스타 라이브로 공개됩니다.</p>
+      <a class="linkbtn" href="https://www.instagram.com/hyunbbyu__" target="_blank" rel="noopener">📺 @hyunbbyu__ 라이브 보러가기</a>
+    </div>
   </section>
 
   <!-- 한마디 -->
@@ -351,6 +374,7 @@
   var VID_KEY = "babypoll.vid";
   var PCT_MIN = 5;
   var REVEAL = [2026, 9, 25];           // 결과 발표일 (KST)
+  var DEADLINE = Date.parse("2026-09-24T18:00:00+09:00");  // 투표 마감 (KST)
   var HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 3.9 12.6a5 5 0 0 1 7.1-7l1 1 1-1a5 5 0 1 1 7.1 7Z" fill="currentColor"/></svg>';
 
   var vid = null, picked = null, myVote = null, busy = false;
@@ -373,6 +397,40 @@
     else { n.textContent = "발표 완료"; l.textContent = "9월 25일에 공개됐어요"; }
   }
   renderDday();
+
+  /* ---------- 투표 마감 ---------- */
+  function isClosed() { return Date.now() >= DEADLINE; }
+  function renderDeadline() {
+    var el = $("deadline");
+    var ms = DEADLINE - Date.now();
+    el.textContent = "";
+    if (ms <= 0) {
+      el.className = "deadline closed";
+      el.textContent = "⏰ 투표가 마감됐어요 · 9월 25일 (금) 인스타 라이브로 결과 발표";
+    } else {
+      el.className = "deadline";
+      var h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
+      var b = document.createElement("b"); b.textContent = "9월 24일 (목) 오후 6시";
+      var left = document.createElement("span"); left.className = "left";
+      left.textContent = h > 0 ? (h + "시간 " + m + "분 남음") : (m + "분 남음");
+      el.appendChild(document.createTextNode("⏰ 투표 마감 "));
+      el.appendChild(b);
+      el.appendChild(document.createTextNode(" · "));
+      el.appendChild(left);
+    }
+    applyClosed();
+  }
+  function applyClosed() {
+    var c = isClosed();
+    $("redo").hidden = c;
+    if (c) {
+      $("voteForm").hidden = true;
+      $("closedBox").hidden = !!myVote;
+      if (!myVote) $("votedBox").hidden = true;
+    } else {
+      $("closedBox").hidden = true;
+    }
+  }
 
   /* ---------- 입력 ---------- */
   var picks = Array.prototype.slice.call(document.querySelectorAll(".pick"));
@@ -428,6 +486,7 @@
 
   function submitVote() {
     if (busy || !picked) return;
+    if (isClosed()) { applyClosed(); return; }
     var nickname = $("nick").value.trim().slice(0, 16);
     if (!nickname) return;
     busy = true; refreshSubmit(); setNote("보내는 중…", false);
@@ -440,7 +499,9 @@
       busy = false; setNote("", false); refreshSubmit();
       return loadAll();
     }).catch(function () {
-      busy = false; refreshSubmit(); setNote("전송에 실패했어요. 다시 눌러 주세요.", true);
+      busy = false; refreshSubmit();
+      if (isClosed()) { setNote("투표가 마감됐어요.", true); applyClosed(); }
+      else setNote("전송에 실패했어요. 다시 눌러 주세요.", true);
     });
   }
 
@@ -617,12 +678,14 @@
       if (!$("nick").value) $("nick").value = myVote.nickname;
       if (!$("msg").value) $("msg").value = myVote.message;
     }
+    applyClosed();
   }
 
   /* ---------- 시작 ---------- */
-  loadAll().then(function () { if (!myVote) setNote("", false); refreshSubmit(); });
-  setInterval(function () { renderDday(); loadAll(); }, 30000);
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) { renderDday(); loadAll(); } });
+  renderDeadline();
+  loadAll().then(function () { if (!myVote) setNote("", false); refreshSubmit(); renderDeadline(); });
+  setInterval(function () { renderDday(); renderDeadline(); loadAll(); }, 30000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { renderDday(); renderDeadline(); loadAll(); } });
 })();
 </script>
 </body>
