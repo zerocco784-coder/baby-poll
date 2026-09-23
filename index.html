@@ -197,6 +197,19 @@
   .like:disabled { opacity: .5; cursor: default; }
 
   .empty { font-size: 13.5px; color: var(--muted); text-align: center; padding: 4px 0; margin: 0; }
+
+  /* 이유 없이 투표한 분들 */
+  .quiet { margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--line-2); }
+  .quiet:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+  .quiet-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 10px; }
+  .quiet-title { font-family: "Jua", sans-serif; font-weight: 400; font-size: 15px; margin: 0; }
+  .quiet-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .qchip { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 500; padding: 4px 10px 4px 7px; border-radius: 99px; }
+  .qchip.daughter { color: var(--girl); background: var(--girl-soft); }
+  .qchip.son { color: var(--boy); background: var(--boy-soft); }
+  .qchip.me { box-shadow: 0 0 0 1.5px var(--gift) inset; }
+  .qchip .f { font-size: 13px; }
   .share { display: flex; justify-content: center; margin-top: 4px; }
   .ghost { font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line-2); border-radius: 99px; padding: 9px 18px; }
   .ghost:hover { color: var(--ink); border-color: var(--ink-2); }
@@ -290,7 +303,7 @@
 
       <button type="button" class="submit" id="submit" disabled>투표하기</button>
       <p class="note" id="note">불러오는 중…</p>
-      <p class="fineprint">한 번 더 투표하면 기존 표가 바뀝니다 (변심 허용 😉)</p>
+      <p class="fineprint">같은 이름으로 다시 투표하면 기존 표가 바뀝니다 (변심 허용 😉)</p>
     </div>
 
     <div class="voted" id="votedBox" hidden>
@@ -309,6 +322,13 @@
       <span class="live" id="wallHint">공감돼요 ♥</span>
     </div>
     <div id="wall"></div>
+    <div class="quiet" id="quietBox" hidden>
+      <div class="quiet-head">
+        <h3 class="quiet-title">🗳️ 조용히 한 표</h3>
+        <span class="quiet-count" id="quietCount"></span>
+      </div>
+      <div class="chips" id="quiet"></div>
+    </div>
   </section>
 
   <div class="share">
@@ -465,14 +485,30 @@
   }
 
   /* ---------- 렌더 ---------- */
+  function nameKey(n) { return String(n || "").replace(/\s+/g, "").toLowerCase(); }
+
   function render(rows) {
-    var entries = rows.map(function (r) {
+    // rows: 최신순. 같은 이름은 가장 최근 표 하나만 반영 (다른 기기에서 다시 찍은 경우 포함)
+    var raw = rows.map(function (r) {
       return {
-        vid: String(r.vid || ""), nickname: String(r.nickname || ""),
+        vid: String(r.vid || ""), nickname: String(r.nickname || "").trim(),
         choice: r.choice === "daughter" ? "daughter" : "son",
-        message: String(r.message || ""), at: String(r.created_at || "")
+        message: String(r.message || "").trim(), at: String(r.created_at || "")
       };
     });
+    var seen = {}, entries = [];
+    raw.forEach(function (v) {
+      var k = nameKey(v.nickname) || ("_" + v.vid);
+      if (seen[k]) return;
+      seen[k] = true; v.key = k; entries.push(v);
+    });
+
+    // 내 표: 이 브라우저의 vid → 같은 이름의 최신 표
+    var mine = null;
+    for (var i = 0; i < raw.length; i++) if (raw[i].vid === vid) { mine = raw[i]; break; }
+    var myKey = mine ? (nameKey(mine.nickname) || ("_" + mine.vid)) : null;
+    myVote = null;
+    if (myKey) for (var j = 0; j < entries.length; j++) if (entries[j].key === myKey) { myVote = entries[j]; break; }
 
     var g = 0, b = 0;
     entries.forEach(function (v) { if (v.choice === "daughter") g++; else b++; });
@@ -505,72 +541,75 @@
       else { lead.textContent = "아들팀이 " + (b - g) + "표 앞서고 있어요 👦"; lead.style.color = "var(--boy)"; }
     }
 
-    myVote = null;
-    for (var i = 0; i < entries.length; i++) if (entries[i].vid === vid) { myVote = entries[i]; break; }
-
     var withMsg = entries.filter(function (v) { return v.message; });
-    var listed = withMsg.length ? withMsg : entries;
+    var quietList = entries.filter(function (v) { return !v.message; });
     var wall = $("wall");
     wall.textContent = "";
     $("wallCard").hidden = !entries.length;
+    wall.hidden = !withMsg.length;
 
-    if (!listed.length) {
-      var p = document.createElement("p"); p.className = "empty";
-      p.textContent = "아직 남겨진 이야기가 없어요.";
-      wall.appendChild(p);
-    } else {
-      listed.forEach(function (v) {
-        var row = document.createElement("div");
-        row.className = "entry";
+    withMsg.forEach(function (v) {
+      var row = document.createElement("div");
+      row.className = "entry";
 
-        var av = document.createElement("div");
-        av.className = "av " + v.choice;
-        av.textContent = FACE[v.choice];
-        row.appendChild(av);
+      var av = document.createElement("div");
+      av.className = "av " + v.choice;
+      av.textContent = FACE[v.choice];
+      row.appendChild(av);
 
-        var body = document.createElement("div");
-        body.className = "entry-body";
+      var body = document.createElement("div");
+      body.className = "entry-body";
+      var top = document.createElement("div");
+      top.className = "entry-top";
+      var name = document.createElement("span");
+      name.className = "entry-name"; name.textContent = v.nickname || "익명";
+      top.appendChild(name);
+      var chip = document.createElement("span");
+      chip.className = "entry-vote " + v.choice; chip.textContent = LABEL[v.choice];
+      top.appendChild(chip);
+      if (v.key === myKey) {
+        var me = document.createElement("span");
+        me.className = "entry-me"; me.textContent = "내 표";
+        top.appendChild(me);
+      }
+      body.appendChild(top);
+      var msg = document.createElement("div");
+      msg.className = "entry-msg"; msg.textContent = v.message;
+      body.appendChild(msg);
+      row.appendChild(body);
 
-        var top = document.createElement("div");
-        top.className = "entry-top";
-        var name = document.createElement("span");
-        name.className = "entry-name"; name.textContent = v.nickname || "익명";
-        top.appendChild(name);
-        var chip = document.createElement("span");
-        chip.className = "entry-vote " + v.choice; chip.textContent = LABEL[v.choice];
-        top.appendChild(chip);
-        if (v.vid === vid) {
-          var me = document.createElement("span");
-          me.className = "entry-me"; me.textContent = "내 표";
-          top.appendChild(me);
-        }
-        body.appendChild(top);
+      var like = document.createElement("button");
+      like.type = "button";
+      like.className = "like";
+      like.innerHTML = HEART + '<span class="n">0</span>';
+      paintLike(like, v.vid);
+      like.addEventListener("click", function () { toggleLike(v.vid, like); });
+      row.appendChild(like);
 
-        if (v.message) {
-          var msg = document.createElement("div");
-          msg.className = "entry-msg"; msg.textContent = v.message;
-          body.appendChild(msg);
-        }
-        row.appendChild(body);
+      wall.appendChild(row);
+    });
 
-        var like = document.createElement("button");
-        like.type = "button";
-        like.className = "like";
-        like.innerHTML = HEART + '<span class="n">0</span>';
-        paintLike(like, v.vid);
-        like.addEventListener("click", function () { toggleLike(v.vid, like); });
-        row.appendChild(like);
-
-        wall.appendChild(row);
-      });
-    }
+    var qBox = $("quietBox"), q = $("quiet");
+    q.textContent = "";
+    qBox.hidden = !quietList.length;
+    $("quietCount").textContent = quietList.length + "명";
+    quietList.forEach(function (v) {
+      var c = document.createElement("span");
+      c.className = "qchip " + v.choice + (v.key === myKey ? " me" : "");
+      c.title = LABEL[v.choice] + "에 투표";
+      var f = document.createElement("span");
+      f.className = "f"; f.textContent = FACE[v.choice];
+      c.appendChild(f);
+      c.appendChild(document.createTextNode((v.nickname || "익명") + (v.key === myKey ? " (나)" : "")));
+      q.appendChild(c);
+    });
 
     if (myVote) {
       $("voteForm").hidden = true;
       $("votedBox").hidden = false;
-      var mine = $("mineText");
-      mine.textContent = FACE[myVote.choice] + " " + LABEL[myVote.choice];
-      mine.className = "mine " + myVote.choice;
+      var mineEl = $("mineText");
+      mineEl.textContent = FACE[myVote.choice] + " " + LABEL[myVote.choice];
+      mineEl.className = "mine " + myVote.choice;
       $("mineMsg").textContent = myVote.message ? ("“" + myVote.message + "”") : "";
       picked = myVote.choice;
       $("submit").setAttribute("data-choice", picked);
