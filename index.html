@@ -8,7 +8,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="럭키의 성별은?? 🍼">
 <meta property="og:description" content="9월 24일(목) 오후 6시까지 투표! 맞히신 분께는 작은 선물이 있어요.">
-<meta name="description" content="태명 럭키 — 아기 성별 맞추기 투표. 9월 25일 결과 발표">
+<meta name="description" content="태명 럭키 — 아기 성별 맞추기 투표. 9월 24일 인스타 스토리 & 라이브로 결과 발표">
 <meta name="theme-color" content="#FDF7F8">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -251,13 +251,13 @@
       </div>
       <div class="dday">
         <div class="n" id="ddayNum">D-?</div>
-        <div class="l" id="ddayLabel">9월 25일 (금) 결과 발표</div>
+        <div class="l" id="ddayLabel">9월 24일 (목) 결과 발표</div>
       </div>
     </div>
     <a class="live-link" href="https://www.instagram.com/hyunbbyu__" target="_blank" rel="noopener">
       <div>
-        <div class="l1">📺 결과는 인스타 라이브로!</div>
-        <div class="l2">9월 25일 (금) · @hyunbbyu__</div>
+        <div class="l1">📺 결과는 인스타 스토리 &amp; 라이브로!</div>
+        <div class="l2">9월 24일 (목) · @hyunbbyu__</div>
       </div>
       <span class="go">라이브 보러가기</span>
     </a>
@@ -333,7 +333,7 @@
 
     <div class="voted" id="closedBox" hidden>
       <span class="mine">투표가 마감됐어요 🙏</span>
-      <p class="sub2">참여해주신 모든 분들 감사해요!<br>결과는 9월 25일 (금) 인스타 라이브로 공개됩니다.</p>
+      <p class="sub2">참여해주신 모든 분들 감사해요!<br>결과는 9월 24일 (목) 인스타 스토리 &amp; 라이브로 공개돼요!</p>
       <a class="linkbtn" href="https://www.instagram.com/hyunbbyu__" target="_blank" rel="noopener">📺 @hyunbbyu__ 라이브 보러가기</a>
     </div>
   </section>
@@ -373,7 +373,7 @@
   var FACE = { son: "👦", daughter: "👧" };
   var VID_KEY = "babypoll.vid";
   var PCT_MIN = 5;
-  var REVEAL = [2026, 9, 25];           // 결과 발표일 (KST)
+  var REVEAL = [2026, 9, 24];           // 결과 발표일 (KST)
   var DEADLINE = Date.parse("2026-09-24T18:00:00+09:00");  // 투표 마감 (KST)
   var HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 3.9 12.6a5 5 0 0 1 7.1-7l1 1 1-1a5 5 0 1 1 7.1 7Z" fill="currentColor"/></svg>';
 
@@ -392,9 +392,9 @@
     var target = Date.UTC(REVEAL[0], REVEAL[1] - 1, REVEAL[2]);
     var d = Math.round((target - today) / 86400000);
     var n = $("ddayNum"), l = $("ddayLabel");
-    if (d > 0) { n.textContent = "D-" + d; l.textContent = "9월 25일 (금) 결과 발표"; }
+    if (d > 0) { n.textContent = "D-" + d; l.textContent = "9월 24일 (목) 결과 발표"; }
     else if (d === 0) { n.textContent = "D-DAY"; l.textContent = "오늘 결과 발표! 🎉"; }
-    else { n.textContent = "발표 완료"; l.textContent = "9월 25일에 공개됐어요"; }
+    else { n.textContent = "발표 완료"; l.textContent = "9월 24일에 공개됐어요"; }
   }
   renderDday();
 
@@ -406,7 +406,7 @@
     el.textContent = "";
     if (ms <= 0) {
       el.className = "deadline closed";
-      el.textContent = "⏰ 투표가 마감됐어요 · 9월 25일 (금) 인스타 라이브로 결과 발표";
+      el.textContent = "⏰ 투표가 마감됐어요 · 결과는 인스타 스토리 & 라이브로!";
     } else {
       el.className = "deadline";
       var h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
