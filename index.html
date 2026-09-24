@@ -8,7 +8,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="럭키의 성별은?? 🍼">
 <meta property="og:description" content="9월 24일(목) 오후 6시까지 투표! 맞히신 분께는 작은 선물이 있어요.">
-<meta name="description" content="태명 럭키 — 아기 성별 맞추기 투표. 9월 24일 인스타 스토리 & 라이브로 결과 발표">
+<meta name="description" content="태명 럭키 — 아기 성별 맞추기 투표. 결과 공개 — 럭키는 딸이에요!">
 <meta name="theme-color" content="#FDF7F8">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -107,11 +107,11 @@
   .dday { flex: none; text-align: right; }
   .dday .n { font-family: "Jua", sans-serif; font-size: 27px; line-height: 1.1; color: var(--gift); font-variant-numeric: tabular-nums; }
   .dday .l { font-size: 11px; color: var(--muted); font-weight: 500; }
-  .live-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 18px 14px; border-top: 1px solid var(--line); text-decoration: none; color: var(--ink); transition: background .15s ease; }
-  .live-link:hover { background: var(--surface-2); }
-  .live-link .l1 { font-family: "Jua", sans-serif; font-size: 15px; }
-  .live-link .l2 { font-size: 12px; color: var(--muted); }
-  .live-link .go { flex: none; font-size: 12.5px; font-weight: 700; color: #fff; background: linear-gradient(100deg, #F58529, #DD2A7B 55%, #8134AF); padding: 8px 13px; border-radius: 99px; white-space: nowrap; }
+  .reveal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 14px; }
+  .reveal-head .t { font-family: "Jua", sans-serif; font-size: 21px; color: var(--girl); line-height: 1.2; }
+  .reveal-head .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .reveal-head .badge { flex: none; font-size: 30px; line-height: 1; }
+  .reveal-vid { display: block; width: 100%; height: auto; max-height: 78vh; aspect-ratio: 720 / 1242; object-fit: contain; background: #0d0d0d; }
 
   /* 집계 */
   .tally { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
@@ -241,6 +241,18 @@
     <p class="deadline" id="deadline">⏰ 투표 마감 <b>9월 24일 (목) 오후 6시</b></p>
   </header>
 
+  <!-- 결과 공개 영상 -->
+  <section class="card flush" id="revealCard">
+    <div class="reveal-head">
+      <div>
+        <div class="t">럭키는 딸이에요! 🎀</div>
+        <div class="d">9월 24일 (목) 결과 공개 · 소리 켜고 보세요 🔊</div>
+      </div>
+      <div class="badge" aria-hidden="true">👧</div>
+    </div>
+    <video class="reveal-vid" src="2026_09_24_17_15_1.mp4#t=0.1" controls playsinline preload="metadata" width="720" height="1242"></video>
+  </section>
+
   <!-- 초음파 + D-day -->
   <section class="card flush">
     <img class="scan" src="data:image/webp;base64,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" alt="럭키의 초음파 사진" width="520" height="391">
@@ -254,13 +266,6 @@
         <div class="l" id="ddayLabel">9월 24일 (목) 결과 발표</div>
       </div>
     </div>
-    <a class="live-link" href="https://www.instagram.com/hyunbbyu__" target="_blank" rel="noopener">
-      <div>
-        <div class="l1">📺 결과는 인스타 스토리 &amp; 라이브로!</div>
-        <div class="l2">9월 24일 (목) · @hyunbbyu__</div>
-      </div>
-      <span class="go">라이브 보러가기</span>
-    </a>
   </section>
 
   <!-- 실시간 현황 -->
@@ -327,14 +332,13 @@
       <p class="sub2">내가 고른 쪽은</p>
       <span class="mine" id="mineText">—</span>
       <p class="sub2" id="mineMsg"></p>
-      <span class="gift-mini">🎁 선물 대상에 들어가셨어요</span>
+      <span class="gift-mini" id="giftMini">🎁 선물 대상에 들어가셨어요</span>
       <button type="button" class="linkbtn" id="redo">역시 마음이 바뀌었어요</button>
     </div>
 
     <div class="voted" id="closedBox" hidden>
       <span class="mine">투표가 마감됐어요 🙏</span>
-      <p class="sub2">참여해주신 모든 분들 감사해요!<br>결과는 9월 24일 (목) 인스타 스토리 &amp; 라이브로 공개돼요!</p>
-      <a class="linkbtn" href="https://www.instagram.com/hyunbbyu__" target="_blank" rel="noopener">📺 @hyunbbyu__ 라이브 보러가기</a>
+      <p class="sub2">참여해주신 모든 분들 감사해요!<br>럭키는 <b style="color:var(--girl)">딸</b>이었어요 🎀</p>
     </div>
   </section>
 
@@ -373,8 +377,9 @@
   var FACE = { son: "👦", daughter: "👧" };
   var VID_KEY = "babypoll.vid";
   var PCT_MIN = 5;
+  var ANSWER = "daughter";              // 정답 (공개 완료)
   var REVEAL = [2026, 9, 24];           // 결과 발표일 (KST)
-  var DEADLINE = Date.parse("2026-09-24T18:00:00+09:00");  // 투표 마감 (KST)
+  var DEADLINE = Date.parse("2026-09-24T17:15:00+09:00");  // 투표 마감 (KST)
   var HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 3.9 12.6a5 5 0 0 1 7.1-7l1 1 1-1a5 5 0 1 1 7.1 7Z" fill="currentColor"/></svg>';
 
   var vid = null, picked = null, myVote = null, busy = false;
@@ -393,8 +398,8 @@
     var d = Math.round((target - today) / 86400000);
     var n = $("ddayNum"), l = $("ddayLabel");
     if (d > 0) { n.textContent = "D-" + d; l.textContent = "9월 24일 (목) 결과 발표"; }
-    else if (d === 0) { n.textContent = "D-DAY"; l.textContent = "오늘 결과 발표! 🎉"; }
-    else { n.textContent = "발표 완료"; l.textContent = "9월 24일에 공개됐어요"; }
+    else if (d === 0) { n.textContent = "D-DAY"; l.textContent = "결과 공개! 딸이에요 🎀"; }
+    else { n.textContent = "발표 완료"; l.textContent = "9월 24일 공개 · 딸 🎀"; }
   }
   renderDday();
 
@@ -406,7 +411,7 @@
     el.textContent = "";
     if (ms <= 0) {
       el.className = "deadline closed";
-      el.textContent = "⏰ 투표가 마감됐어요 · 결과는 인스타 스토리 & 라이브로!";
+      el.textContent = "⏰ 투표 마감 · 럭키는 딸이었어요! 🎀";
     } else {
       el.className = "deadline";
       var h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
@@ -596,8 +601,9 @@
       var strong = document.createElement("b"); strong.textContent = total + "명";
       note.appendChild(document.createTextNode("지금까지 "));
       note.appendChild(strong);
-      note.appendChild(document.createTextNode("이 투표했어요"));
-      if (g === b) { lead.textContent = "딱 동점이에요 🤝"; lead.style.color = "var(--ink)"; }
+      note.appendChild(document.createTextNode(isClosed() ? "이 참여했어요" : "이 투표했어요"));
+      if (isClosed()) { lead.textContent = "🎉 딸 맞히신 " + g + "분, 축하해요!"; lead.style.color = "var(--girl)"; }
+      else if (g === b) { lead.textContent = "딱 동점이에요 🤝"; lead.style.color = "var(--ink)"; }
       else if (g > b) { lead.textContent = "딸팀이 " + (g - b) + "표 앞서고 있어요 👧"; lead.style.color = "var(--girl)"; }
       else { lead.textContent = "아들팀이 " + (b - g) + "표 앞서고 있어요 👦"; lead.style.color = "var(--boy)"; }
     }
@@ -672,6 +678,9 @@
       mineEl.textContent = FACE[myVote.choice] + " " + LABEL[myVote.choice];
       mineEl.className = "mine " + myVote.choice;
       $("mineMsg").textContent = myVote.message ? ("“" + myVote.message + "”") : "";
+      var gm = $("giftMini");
+      if (isClosed()) gm.textContent = myVote.choice === ANSWER ? "🎉 정답! 선물 받으실 거예요 🎁" : "아쉽지만 럭키는 딸이었어요 😅";
+      else gm.textContent = "🎁 선물 대상에 들어가셨어요";
       picked = myVote.choice;
       $("submit").setAttribute("data-choice", picked);
       picks.forEach(function (bt) { bt.setAttribute("aria-pressed", String(bt.getAttribute("data-choice") === myVote.choice)); });
