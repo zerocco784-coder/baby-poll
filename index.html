@@ -111,7 +111,7 @@
   .reveal-head .t { font-family: "Jua", sans-serif; font-size: 21px; color: var(--girl); line-height: 1.2; }
   .reveal-head .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .reveal-head .badge { flex: none; font-size: 30px; line-height: 1; }
-  .reveal-vid { display: block; width: 100%; height: auto; max-height: 78vh; aspect-ratio: 720 / 1242; object-fit: contain; background: #0d0d0d; }
+  .reveal-vid { display: block; width: 100%; height: auto; max-height: 78vh; min-height: 200px; object-fit: contain; background: #0d0d0d; }
 
   /* 집계 */
   .tally { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
@@ -250,7 +250,10 @@
       </div>
       <div class="badge" aria-hidden="true">👧</div>
     </div>
-    <video class="reveal-vid" src="2026_09_24_17_15_1.mp4#t=0.1" controls playsinline preload="metadata" width="720" height="1242"></video>
+    <video class="reveal-vid" controls playsinline preload="metadata">
+      <source src="reveal.mp4#t=0.1" type="video/mp4">
+      <source src="2026_09_24_17_15_1.mp4#t=0.1" type="video/mp4">
+    </video>
   </section>
 
   <!-- 초음파 + D-day -->
