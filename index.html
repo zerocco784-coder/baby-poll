@@ -7,8 +7,8 @@
 
 <meta property="og:type" content="website">
 <meta property="og:title" content="럭키의 성별은?? 🍼">
-<meta property="og:description" content="9월 24일(목) 오후 6시까지 투표! 맞히신 분께는 작은 선물이 있어요.">
-<meta name="description" content="태명 럭키 — 아기 성별 맞추기 투표. 결과 공개 — 럭키는 딸이에요!">
+<meta property="og:description" content="딸일까 아들일까? 한 표 던지면 결과 영상이 열려요 🔒">
+<meta name="description" content="태명 럭키 — 아기 성별 맞추기 투표. 투표하면 결과 영상을 볼 수 있어요.">
 <meta name="theme-color" content="#FDF7F8">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -107,6 +107,12 @@
   .dday { flex: none; text-align: right; }
   .dday .n { font-family: "Jua", sans-serif; font-size: 27px; line-height: 1.1; color: var(--gift); font-variant-numeric: tabular-nums; }
   .dday .l { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .lock { text-align: center; padding: 26px 20px 24px; }
+  .lock .ic { font-size: 34px; line-height: 1; }
+  .lock .t { margin: 10px 0 4px; font-family: "Jua", sans-serif; font-size: 20px; line-height: 1.3; }
+  .lock .d { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.55; }
+  .lock .go { display: inline-block; margin-top: 14px; font-family: "Jua", sans-serif; font-size: 15px; color: #fff; background: var(--girl); padding: 10px 18px; border-radius: 99px; text-decoration: none; }
+  .lock .fine { margin: 12px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
   .reveal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 14px; }
   .reveal-head .t { font-family: "Jua", sans-serif; font-size: 21px; color: var(--girl); line-height: 1.2; }
   .reveal-head .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
@@ -238,11 +244,20 @@
     <p class="sub"><span class="g">딸</span>일까 <span class="b">아들</span>일까 🍼</p>
     <p class="lede">이름 적고 한 표만 주세요. 이유도 남겨주시면 더 좋고요 😊</p>
     <div class="gift"><span class="em">🎁</span> 맞히신 분께는 작은 선물이 있어요!</div>
-    <p class="deadline" id="deadline">⏰ 투표 마감 <b>9월 24일 (목) 오후 6시</b></p>
+    <p class="deadline" id="deadline">🗳️ 한 표 던지면 결과 영상이 열려요!</p>
   </header>
 
+  <!-- 미투표자 잠금 -->
+  <section class="card lock" id="lockCard">
+    <div class="ic" aria-hidden="true">🔒</div>
+    <p class="t">결과 영상 &amp; 투표 현황은<br>투표해야 볼 수 있어요!</p>
+    <p class="d">럭키의 성별 발표 영상이 준비돼 있어요 🎬<br>아래에서 한 표 먼저 던지면 바로 열려요.</p>
+    <a class="go" href="#voteCard">👇 투표하러 가기</a>
+    <p class="fine">다른 기기에서 이미 투표하셨다면, 같은 이름으로 한 번 더 눌러주세요.<br>처음 투표한 표가 그대로 반영돼요.</p>
+  </section>
+
   <!-- 결과 공개 영상 -->
-  <section class="card flush" id="revealCard">
+  <section class="card flush" id="revealCard" hidden>
     <div class="reveal-head">
       <div>
         <div class="t">럭키는 딸이에요! 🎀</div>
@@ -266,13 +281,13 @@
       </div>
       <div class="dday">
         <div class="n" id="ddayNum">D-?</div>
-        <div class="l" id="ddayLabel">9월 24일 (목) 결과 발표</div>
+        <div class="l" id="ddayLabel">결과 공개 완료</div>
       </div>
     </div>
   </section>
 
   <!-- 실시간 현황 -->
-  <section class="card">
+  <section class="card" id="tallyCard" hidden>
     <div class="card-head">
       <h2 class="card-title">📊 실시간 현황</h2>
       <span class="live"><span class="dot"></span>LIVE</span>
@@ -296,7 +311,7 @@
   </section>
 
   <!-- 내 한 표 -->
-  <section class="card">
+  <section class="card" id="voteCard">
     <div id="voteForm">
       <div class="card-head"><h2 class="card-title">✍️ 내 한 표</h2></div>
 
@@ -328,7 +343,7 @@
 
       <button type="button" class="submit" id="submit" disabled>투표하기</button>
       <p class="note" id="note">불러오는 중…</p>
-      <p class="fineprint">같은 이름으로 다시 투표하면 기존 표가 바뀝니다 (변심 허용 😉)</p>
+      <p class="fineprint">투표하면 바로 결과 영상이 열려요 · 한 번 투표하면 바꿀 수 없어요</p>
     </div>
 
     <div class="voted" id="votedBox" hidden>
@@ -382,7 +397,7 @@
   var PCT_MIN = 5;
   var ANSWER = "daughter";              // 정답 (공개 완료)
   var REVEAL = [2026, 9, 24];           // 결과 발표일 (KST)
-  var DEADLINE = Date.parse("2026-09-24T17:15:00+09:00");  // 투표 마감 (KST)
+  var DEADLINE = Date.parse("2026-09-24T17:15:00+09:00");  // 결과 공개 시각 (이후 표는 늦은 투표)
   var HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 3.9 12.6a5 5 0 0 1 7.1-7l1 1 1-1a5 5 0 1 1 7.1 7Z" fill="currentColor"/></svg>';
 
   var vid = null, picked = null, myVote = null, busy = false;
@@ -401,43 +416,27 @@
     var d = Math.round((target - today) / 86400000);
     var n = $("ddayNum"), l = $("ddayLabel");
     if (d > 0) { n.textContent = "D-" + d; l.textContent = "9월 24일 (목) 결과 발표"; }
-    else if (d === 0) { n.textContent = "D-DAY"; l.textContent = "결과 공개! 딸이에요 🎀"; }
-    else { n.textContent = "발표 완료"; l.textContent = "9월 24일 공개 · 딸 🎀"; }
+    else { n.textContent = d === 0 ? "D-DAY" : "발표 완료"; l.textContent = myVote ? "9월 24일 공개 · 딸 🎀" : "결과 공개 완료 · 투표 후 확인"; }
   }
   renderDday();
 
   /* ---------- 투표 마감 ---------- */
   function isClosed() { return Date.now() >= DEADLINE; }
-  function renderDeadline() {
-    var el = $("deadline");
-    var ms = DEADLINE - Date.now();
-    el.textContent = "";
-    if (ms <= 0) {
-      el.className = "deadline closed";
-      el.textContent = "⏰ 투표 마감 · 럭키는 딸이었어요! 🎀";
-    } else {
-      el.className = "deadline";
-      var h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
-      var b = document.createElement("b"); b.textContent = "9월 24일 (목) 오후 6시";
-      var left = document.createElement("span"); left.className = "left";
-      left.textContent = h > 0 ? (h + "시간 " + m + "분 남음") : (m + "분 남음");
-      el.appendChild(document.createTextNode("⏰ 투표 마감 "));
-      el.appendChild(b);
-      el.appendChild(document.createTextNode(" · "));
-      el.appendChild(left);
-    }
-    applyClosed();
-  }
+  function renderDeadline() { applyClosed(); }
   function applyClosed() {
-    var c = isClosed();
-    $("redo").hidden = c;
-    if (c) {
-      $("voteForm").hidden = true;
-      $("closedBox").hidden = !!myVote;
-      if (!myVote) $("votedBox").hidden = true;
-    } else {
-      $("closedBox").hidden = true;
-    }
+    var open = !!myVote;
+    var el = $("deadline");
+    el.className = "deadline" + (open ? " closed" : "");
+    el.textContent = open ? "🎀 럭키는 딸이었어요! 참여해주셔서 감사해요" : "🗳️ 한 표 던지면 결과 영상이 열려요!";
+    $("redo").hidden = true;
+    $("closedBox").hidden = true;
+    $("voteForm").hidden = open;
+    $("votedBox").hidden = !open;
+    $("lockCard").hidden = open;
+    $("revealCard").hidden = !open;
+    $("tallyCard").hidden = !open;
+    if (!open) $("wallCard").hidden = true;
+    renderDday();
   }
 
   /* ---------- 입력 ---------- */
@@ -494,22 +493,22 @@
 
   function submitVote() {
     if (busy || !picked) return;
-    if (isClosed()) { applyClosed(); return; }
     var nickname = $("nick").value.trim().slice(0, 16);
     if (!nickname) return;
     busy = true; refreshSubmit(); setNote("보내는 중…", false);
-    fetch(SUPABASE_URL + "/rest/v1/votes?on_conflict=vid", {
+    fetch(SUPABASE_URL + "/rest/v1/votes", {
       method: "POST",
-      headers: headers({ "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates,return=minimal" }),
+      headers: headers({ "Content-Type": "application/json", "Prefer": "return=minimal" }),
       body: JSON.stringify({ vid: vid, choice: picked, nickname: nickname, message: $("msg").value.trim().slice(0, 80) })
     }).then(function (r) {
-      if (!r.ok) throw 0;
+      if (!r.ok && r.status !== 409) throw 0;
       busy = false; setNote("", false); refreshSubmit();
-      return loadAll();
+      return loadAll().then(function () {
+        if (myVote) { var rc = $("revealCard"); if (rc.scrollIntoView) rc.scrollIntoView({ behavior: "smooth", block: "start" }); }
+      });
     }).catch(function () {
       busy = false; refreshSubmit();
-      if (isClosed()) { setNote("투표가 마감됐어요.", true); applyClosed(); }
-      else setNote("전송에 실패했어요. 다시 눌러 주세요.", true);
+      setNote("전송에 실패했어요. 다시 눌러 주세요.", true);
     });
   }
 
@@ -565,11 +564,14 @@
         message: String(r.message || "").trim(), at: String(r.created_at || "")
       };
     });
+    // 같은 이름: 발표 전 표가 있으면 그중 최신 표, 발표 후 표만 있으면 가장 처음 표 (결과 보고 바꾸기 방지)
     var seen = {}, entries = [];
     raw.forEach(function (v) {
       var k = nameKey(v.nickname) || ("_" + v.vid);
-      if (seen[k]) return;
-      seen[k] = true; v.key = k; entries.push(v);
+      v.key = k; v.late = Date.parse(v.at) >= DEADLINE;
+      var cur = seen[k];
+      if (!cur) { seen[k] = v; entries.push(v); return; }
+      if (cur.late && (!v.late || Date.parse(v.at) < Date.parse(cur.at))) { entries[entries.indexOf(cur)] = v; seen[k] = v; }
     });
 
     // 내 표: 이 브라우저의 vid → 같은 이름의 최신 표
@@ -615,7 +617,7 @@
     var quietList = entries.filter(function (v) { return !v.message; });
     var wall = $("wall");
     wall.textContent = "";
-    $("wallCard").hidden = !entries.length;
+    $("wallCard").hidden = !entries.length || !myVote;
     wall.hidden = !withMsg.length;
 
     withMsg.forEach(function (v) {
@@ -682,8 +684,8 @@
       mineEl.className = "mine " + myVote.choice;
       $("mineMsg").textContent = myVote.message ? ("“" + myVote.message + "”") : "";
       var gm = $("giftMini");
-      if (isClosed()) gm.textContent = myVote.choice === ANSWER ? "🎉 정답! 선물 받으실 거예요 🎁" : "아쉽지만 럭키는 딸이었어요 😅";
-      else gm.textContent = "🎁 선물 대상에 들어가셨어요";
+      if (myVote.late) gm.textContent = myVote.choice === ANSWER ? "🎉 정답이에요! 영상 보러 가요 🎬" : "아쉽지만 럭키는 딸이었어요 😅";
+      else gm.textContent = myVote.choice === ANSWER ? "🎉 정답! 선물 받으실 거예요 🎁" : "아쉽지만 럭키는 딸이었어요 😅";
       picked = myVote.choice;
       $("submit").setAttribute("data-choice", picked);
       picks.forEach(function (bt) { bt.setAttribute("aria-pressed", String(bt.getAttribute("data-choice") === myVote.choice)); });
