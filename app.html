@@ -512,11 +512,11 @@
   function viewPoll(id) {
     app.innerHTML = '<div class="spin"></div>';
     P = { id: id, vid: getVid(), poll: null, rows: [], likeCount: {}, myLikes: {}, likeBusy: {}, myVote: null, mine: null, picked: null, busy: false, reveal: null };
-    get("polls_public?id=eq." + encodeURIComponent(id) + "&select=*").then(function (r) {
-      if (!r.length) { app.innerHTML = head("Oops", "페이지를 찾을 수 없어요", "") + '<p class="foot"><a href="#/">처음으로</a></p>'; return; }
-      P.poll = r[0];
+    rpc("get_poll_bundle", { pid: id, v: P.vid }).then(function (b) {
+      if (!b || !b.poll) { app.innerHTML = head("Oops", "페이지를 찾을 수 없어요", "") + '<p class="foot"><a href="#/">처음으로</a></p>'; return; }
+      P.poll = b.poll;
       renderPollShell();
-      return refreshPoll();
+      return refreshPoll(b);
     }).catch(function () { app.innerHTML = head("Oops", "불러오지 못했어요", "잠시 뒤 새로고침해 주세요") ; });
   }
 
@@ -618,17 +618,14 @@
     } else { el.className = "deadline"; el.textContent = "🗳️ 지금 투표 중이에요"; }
   }
 
-  function refreshPoll() {
-    var id = encodeURIComponent(P.id);
-    return Promise.all([
-      get("polls_public?id=eq." + id + "&select=*").catch(function () { return [P.poll]; }),
-      get("poll_votes?poll_id=eq." + id + "&select=vid,nickname,choice,message,created_at&order=created_at.desc"),
-      get("poll_likes?poll_id=eq." + id + "&select=target,liker").catch(function () { return []; })
-    ]).then(function (res) {
-      if (res[0] && res[0][0]) P.poll = res[0][0];
-      P.rows = res[1] || [];
+  // 서버는 투표자 식별값(vid)을 내려주지 않음: 표마다 id와 '내 표인지'만 옴
+  function refreshPoll(pre) {
+    return (pre ? Promise.resolve(pre) : rpc("get_poll_bundle", { pid: P.id, v: P.vid })).then(function (b) {
+      if (!b || !b.poll) throw new Error("gone");
+      P.poll = b.poll;
+      P.rows = b.votes || [];
       P.likeCount = {}; P.myLikes = {};
-      (res[2] || []).forEach(function (l) { P.likeCount[l.target] = (P.likeCount[l.target] || 0) + 1; if (l.liker === P.vid) P.myLikes[l.target] = true; });
+      (b.likes || []).forEach(function (l) { P.likeCount[l.target] = l.n || 0; if (l.mine) P.myLikes[l.target] = true; });
       computeVotes();
       if (P.poll.revealed && P.mine && !P.reveal) {
         return rpc("get_reveal", { pid: P.id, v: P.vid }).then(function (r) { P.reveal = r || null; }).catch(function () {});
@@ -642,7 +639,7 @@
     var cut = cutoff();
     var raw = P.rows.map(function (r) {
       var at = String(r.created_at || "");
-      return { vid: String(r.vid || ""), nickname: String(r.nickname || "").trim(), choice: r.choice === "daughter" ? "daughter" : "son", message: String(r.message || "").trim(), at: at, late: Date.parse(at) >= cut };
+      return { vid: "v" + r.id, own: !!r.mine, nickname: String(r.nickname || "").trim(), choice: r.choice === "daughter" ? "daughter" : "son", message: String(r.message || "").trim(), at: at, late: Date.parse(at) >= cut };
     });
     // 같은 이름: 마감·발표 전 표가 있으면 그중 최신, 이후 표만 있으면 가장 처음 표
     var seen = {}, entries = [];
@@ -654,7 +651,7 @@
     });
     P.entries = entries;
     P.mine = null;
-    for (var i = 0; i < raw.length; i++) if (raw[i].vid === P.vid) { P.mine = raw[i]; break; }
+    for (var i = 0; i < raw.length; i++) if (raw[i].own) { P.mine = raw[i]; break; }
     P.myVote = null;
     if (P.mine) for (var j = 0; j < entries.length; j++) if (entries[j].key === P.mine.key) { P.myVote = entries[j]; break; }
     if (P.mine && !P.myVote) P.myVote = P.mine;
@@ -763,10 +760,7 @@
     P.myLikes[target] = !liked; P.likeCount[target] = Math.max(0, (P.likeCount[target] || 0) + (liked ? -1 : 1));
     paintLike(btn, target);
     if (!liked) { btn.classList.add("pop"); setTimeout(function () { btn.classList.remove("pop"); }, 160); }
-    var req = liked
-      ? fetch(SB + "/rest/v1/poll_likes?poll_id=eq." + encodeURIComponent(P.id) + "&target=eq." + encodeURIComponent(target) + "&liker=eq." + encodeURIComponent(P.vid), { method: "DELETE", headers: hdr() })
-      : insert("poll_likes?on_conflict=poll_id,target,liker", { poll_id: P.id, target: target, liker: P.vid }, "resolution=ignore-duplicates,return=minimal");
-    req.then(function (r) { if (!r.ok) throw 0; }).catch(function () {
+    rpc("poll_like", { pid: P.id, tgt: target, v: P.vid, on_: !liked }).then(function (ok) { if (!ok) throw 0; }).catch(function () {
       P.myLikes[target] = liked; P.likeCount[target] = Math.max(0, (P.likeCount[target] || 0) + (liked ? 1 : -1)); paintLike(btn, target);
     }).then(function () { P.likeBusy[target] = false; });
   }
@@ -794,7 +788,7 @@
   function viewAdmin(id, token) {
     app.innerHTML = '<div class="spin"></div>';
     A = { id: id, token: token, poll: null, votes: [], answer: null, revealFile: null, coverFile: null };
-    Promise.all([rpc("admin_get_poll", { pid: id, token: token }), get("poll_votes?poll_id=eq." + encodeURIComponent(id) + "&select=vid,nickname,choice,message,created_at&order=created_at.desc").catch(function () { return []; })])
+    rpc("admin_get_poll", { pid: id, token: token }).then(function (r) { return [r, (r && r.votes) || []]; })
       .then(function (res) {
         if (!res[0]) { app.innerHTML = head("Oops", "관리 링크가 올바르지 않아요", "") + '<p class="foot"><a href="#/">처음으로</a></p>'; return; }
         A.poll = res[0]; A.votes = res[1] || []; A.answer = A.poll.answer;
@@ -809,7 +803,7 @@
     var cut = cuts.length ? Math.min.apply(null, cuts) : Infinity, seen = {}, entries = [];
     A.votes.forEach(function (r) {
       var v = { nickname: String(r.nickname || "").trim(), choice: r.choice, at: r.created_at, late: Date.parse(r.created_at) >= cut };
-      var k = nameKey(v.nickname) || ("_" + r.vid), cur = seen[k];
+      var k = nameKey(v.nickname) || ("_" + r.id), cur = seen[k];
       if (!cur) { seen[k] = v; entries.push(v); return; }
       if (cur.late && (!v.late || Date.parse(v.at) < Date.parse(cur.at))) { entries[entries.indexOf(cur)] = v; seen[k] = v; }
     });
