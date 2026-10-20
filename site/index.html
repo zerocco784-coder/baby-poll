@@ -286,10 +286,21 @@
   @media (max-width: 400px) { .card { padding: 20px 16px; } .card.flush { padding: 0; } }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
   h1 .b2 { color: var(--boy); }
+
+  /* 카카오 로그인 */
+  .kakao-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 360px; font: inherit; font-weight: 700; font-size: 15.5px; cursor: pointer; color: rgba(0,0,0,.85); background: #FEE500; border: none; border-radius: 12px; padding: 13px 16px; }
+  .kakao-btn svg { width: 19px; height: 19px; }
+  .kakao-btn:hover { filter: brightness(.97); }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .seg-btn { font: inherit; font-size: 13px; cursor: pointer; color: var(--ink-2); background: var(--surface); border: 1.5px solid var(--line-2); border-radius: 12px; padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .seg-btn b { font-size: 14.5px; color: var(--ink); font-weight: 700; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .seg-btn[aria-pressed="true"] { border-color: var(--gift); background: var(--gift-soft); color: var(--gift); }
+  #loginGate { padding: 4px 0 2px; }
 </style>
 </head>
 <body>
 <div class="wrap" id="app"><div class="spin"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -342,9 +353,33 @@
   function localInput(iso) { if (!iso) return ""; var d = new Date(iso), z = function (x) { return (x < 10 ? "0" : "") + x; }; return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + "T" + z(d.getHours()) + ":" + z(d.getMinutes()); }
 
   /* ---------- 서버 ---------- */
+  /* ---------- 카카오 로그인 (Supabase Auth) ---------- */
+  var sbc = null, SESSION = null;
+  try { sbc = window.supabase.createClient(SB, KEY, { auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } }); } catch (e) { sbc = null; }
+  function me() { return SESSION && SESSION.user ? SESSION.user : null; }
+  function kakaoName() {
+    var u = me(); if (!u) return "";
+    var m = u.user_metadata || {};
+    return String(m.name || m.full_name || m.nickname || m.preferred_username || m.user_name || "").trim().slice(0, 16);
+  }
+  function login() {
+    if (!sbc) { toast("로그인을 불러오지 못했어요. 새로고침해 주세요"); return; }
+    var next = location.hash || "#/";
+    sbc.auth.signInWithOAuth({ provider: "kakao", options: { redirectTo: baseUrl() + "?next=" + encodeURIComponent(next) } });
+  }
+  function logout() { if (sbc) sbc.auth.signOut().then(function () { SESSION = null; route(); }); }
+  function kakaoBtn(id, text) { return '<button type="button" class="kakao-btn" id="' + id + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3C6.48 3 2 6.58 2 11c0 2.85 1.86 5.35 4.66 6.77l-.95 3.48c-.08.3.26.54.52.37l4.13-2.74c.53.07 1.08.12 1.64.12 5.52 0 10-3.58 10-8S17.52 3 12 3z"/></svg>' + text + '</button>'; }
+  function authBar() {
+    var u = me();
+    return u ? '<p class="foot">카카오 로그인됨 · ' + esc(kakaoName() || "사용자") + ' · <a href="#" id="logoutLink">로그아웃</a> · <a href="#/privacy">개인정보 처리방침</a></p>'
+             : '<p class="foot"><a href="#/privacy">개인정보 처리방침</a></p>';
+  }
+  function bindAuthBar() { var l = $("logoutLink"); if (l) l.addEventListener("click", function (e) { e.preventDefault(); logout(); }); }
+
   function hdr(extra) {
     var h = { apikey: KEY };
-    if (KEY.split(".").length === 3) h.Authorization = "Bearer " + KEY;
+    if (SESSION && SESSION.access_token) h.Authorization = "Bearer " + SESSION.access_token;
+    else if (KEY.split(".").length === 3) h.Authorization = "Bearer " + KEY;
     for (var k in extra) h[k] = extra[k];
     return h;
   }
@@ -446,17 +481,28 @@
   function viewHome() {
     setTitle("딸일까 아들일까 · 성별 맞추기 투표");
     var mine = myPolls();
+    if (me() && !viewHome.loaded) {
+      rpc("my_polls", {}).then(function (list) {
+        var known = {}; mine.forEach(function (m) { known[m.id] = 1; });
+        (list || []).forEach(function (x) { if (!known[x.id]) mine.push({ id: x.id, t: "-", b: x.baby_name }); });
+        viewHome.extra = mine; viewHome.loaded = true; if (!location.hash || location.hash === "#/") viewHome();
+      }).catch(function () {});
+    }
+    if (viewHome.extra) { mine = viewHome.extra; viewHome.loaded = false; viewHome.extra = null; }
     app.innerHTML =
       head("Baby Gender Party", '우리 아기는<br><span class="q">딸</span>일까 <span class="b2">아들</span>일까?', '지인들과 함께하는 성별 맞추기 투표 🍼') +
       '<section class="card"><ol class="steps">' +
-      '<li><span class="num">1</span><div><b>태명이랑 초음파 사진으로 페이지 만들기</b><span>로그인 없이 1분이면 끝나요</span></div></li>' +
+      '<li><span class="num">1</span><div><b>태명이랑 초음파 사진으로 페이지 만들기</b><span>1분이면 끝나요 · 카카오 로그인하면 어느 폰에서든 관리</span></div></li>' +
       '<li><span class="num">2</span><div><b>링크 공유 → 지인들이 투표 + 한마디</b><span>실시간 현황, 한마디에 하트까지</span></div></li>' +
       '<li><span class="num">3</span><div><b>발표날 영상 올리고 결과 공개</b><span>투표한 사람만 결과 영상을 볼 수 있어요 🔒</span></div></li>' +
       '</ol><a class="btn" href="#/new" style="margin-top:20px">투표 페이지 만들기 ✨</a></section>' +
       (mine.length ? '<section class="card"><div class="card-head"><h2 class="card-title">📂 내가 만든 페이지</h2></div><div class="mine-list">' +
         mine.map(function (m) { return '<a href="#/a/' + esc(m.id) + '/' + esc(m.t) + '">' + esc(m.b || m.id) + '<span>관리하기 →</span></a>'; }).join("") +
-        '</div><p class="muted">이 브라우저에만 기억돼요. 관리 링크는 따로 꼭 저장해 두세요.</p></section>' : '') +
-      '<p class="foot">🎁 맞힌 사람 선물 명단도 자동으로 정리돼요</p>';
+        '</div><p class="muted">' + (me() ? '카카오 계정으로 만든 페이지는 어느 폰에서든 보여요.' : '이 브라우저에만 기억돼요. 카카오로 로그인하면 어느 폰에서든 볼 수 있어요.') + '</p></section>' : '') +
+      (me() ? '' : '<div class="share">' + kakaoBtn("homeLogin", "카카오로 로그인") + '</div>') +
+      '<p class="foot">🎁 맞힌 사람 선물 명단도 자동으로 정리돼요</p>' + authBar();
+    if ($("homeLogin")) $("homeLogin").addEventListener("click", login);
+    bindAuthBar();
   }
 
   /* ================= 만들기 ================= */
@@ -474,7 +520,10 @@
       '<div class="group"><label class="label" for="fGift">맞히면 선물 <span class="hint">선택 · 쓰면 상단에 크게 보여요</span></label><input class="field" id="fGift" maxlength="60" placeholder="예) 맞히신 분께는 작은 선물이 있어요!"></div>' +
       '<button type="button" class="btn" id="fGo" disabled>페이지 만들기</button>' +
       '<p class="note" id="fNote">결과 영상은 나중에 관리 페이지에서 올려요</p>' +
-      '</section><p class="foot"><a href="#/">← 처음으로</a></p>';
+      '</section>' + (me() ? '' : '<p class="muted center">💡 카카오로 로그인하고 만들면 관리 링크를 잃어버려도 어느 폰에서든 관리할 수 있어요</p><div class="share">' + kakaoBtn("newLogin", "카카오로 로그인") + '</div>') +
+      '<p class="foot"><a href="#/">← 처음으로</a></p>' + authBar();
+    if ($("newLogin")) $("newLogin").addEventListener("click", login);
+    bindAuthBar();
     var cover = null;
     bindPicker("fCover", function (f) { cover = f; });
     var baby = $("fBaby"), go = $("fGo"), note = $("fNote");
@@ -540,7 +589,7 @@
       '<p class="t">결과 영상 &amp; 투표 현황은<br>투표해야 볼 수 있어요!</p>' +
       '<p class="d">' + bn + '의 성별 발표가 준비돼 있어요 🎬<br>아래에서 한 표 먼저 던지면 바로 열려요.</p>' +
       '<a class="go" href="#voteCard" id="lockGo">👇 투표하러 가기</a>' +
-      '<p class="fine">다른 기기에서 이미 투표하셨다면, 같은 이름으로 한 번 더 눌러주세요.<br>처음 투표한 표가 그대로 반영돼요.</p></section>' +
+      '<p class="fine">이미 투표하셨다면 그때 쓴 카카오 계정으로 로그인하면 바로 열려요.</p></section>' +
 
       '<section class="card flush" id="revealCard" hidden><div class="reveal-head"><div><div class="t" id="revealT"></div><div class="d" id="revealD"></div></div><div class="badge" id="revealB"></div></div><div id="revealMedia"></div></section>' +
 
@@ -556,13 +605,18 @@
 
       '<section class="card" id="voteCard"><div id="voteForm">' +
       '<div class="card-head"><h2 class="card-title">✍️ 내 한 표</h2></div>' +
-      '<div class="group"><label class="label" for="nick">이름 (또는 별명)' + (p.gift ? ' <span class="hint">선물 드릴 때 필요해요</span>' : '') + '</label><input class="field" id="nick" type="text" maxlength="16" autocomplete="off" placeholder="예) 김대리, 큰이모"></div>' +
+      '<div id="loginGate" class="center"' + (me() ? ' hidden' : '') + '>' + kakaoBtn("voteLogin", "카카오로 로그인하고 투표하기") +
+      '<p class="fineprint">한 사람 한 표를 위해 카카오 로그인이 필요해요<br>닉네임만 사용하고 다른 곳에 쓰지 않아요 · <a href="#/privacy">개인정보 처리방침</a></p></div>' +
+      '<div id="voteFields"' + (me() ? '' : ' hidden') + '>' +
+      '<div class="group"><span class="label">이름 표시' + (p.gift ? ' <span class="hint">선물 드릴 때 필요해요</span>' : '') + '</span>' +
+      '<div class="seg"><button type="button" class="seg-btn" data-nt="kakao" aria-pressed="true">카카오 닉네임<b id="kNick"></b></button><button type="button" class="seg-btn" data-nt="real" aria-pressed="false">실명으로<b>직접 입력</b></button></div>' +
+      '<input class="field" id="nick" type="text" maxlength="16" autocomplete="name" placeholder="실명을 적어주세요" hidden style="margin-top:10px"></div>' +
       '<div class="group"><span class="label">' + bn + josa(p.baby_name, "는", "이는") + ' 어느 쪽일까요?</span><div class="picks">' +
       '<button type="button" class="pick" data-choice="daughter" aria-pressed="false"><span class="tick" aria-hidden="true">✓</span><span class="face" aria-hidden="true">👧</span><span class="nm">딸</span></button>' +
       '<button type="button" class="pick" data-choice="son" aria-pressed="false"><span class="tick" aria-hidden="true">✓</span><span class="face" aria-hidden="true">👦</span><span class="nm">아들</span></button></div></div>' +
       '<div class="group"><label class="label" for="msg">이유 <span class="hint">안 써도 돼요</span></label><textarea class="field" id="msg" maxlength="80" placeholder="엄마가 단 걸 좋아하면 딸이래요 🍰"></textarea></div>' +
       '<button type="button" class="submit" id="submit" disabled>투표하기</button><p class="note" id="note">불러오는 중…</p>' +
-      '<p class="fineprint">한 번 투표하면 바꿀 수 없어요</p></div>' +
+      '<p class="fineprint">한 번 투표하면 바꿀 수 없어요</p></div></div>' +
       '<div class="voted" id="votedBox" hidden><p class="sub2">내가 고른 쪽은</p><span class="mine" id="mineText">—</span><p class="sub2" id="mineMsg"></p><span class="gift-mini" id="giftMini"></span></div>' +
       '<div class="voted" id="closedBox" hidden><span class="mine">투표가 마감됐어요 🙏</span><p class="sub2">결과 발표를 기다려 주세요!</p></div></section>' +
 
@@ -571,7 +625,7 @@
 
       '<div class="share"><button type="button" class="ghost" id="copyLink">🔗 투표 링크 복사</button>' +
       (token ? '<a class="ghost" href="#/a/' + esc(p.id) + '/' + esc(token) + '">⚙️ 관리하기</a>' : '') + '</div>' +
-      '<p class="foot">나도 우리 아기 투표 만들기 → <a href="#/new">만들러 가기</a></p>';
+      '<p class="foot">나도 우리 아기 투표 만들기 → <a href="#/new">만들러 가기</a></p>' + authBar();
 
     var picks = Array.prototype.slice.call(document.querySelectorAll(".pick"));
     picks.forEach(function (btn) {
@@ -582,13 +636,28 @@
       });
     });
     $("nick").addEventListener("input", refreshSubmit);
+    $("voteLogin").addEventListener("click", login);
+    bindAuthBar();
+    P.nameType = "kakao";
+    $("kNick").textContent = kakaoName() || "(닉네임 없음)";
+    if (!kakaoName()) P.nameType = "real";
+    var segs = Array.prototype.slice.call(document.querySelectorAll(".seg-btn"));
+    function paintSeg() {
+      segs.forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-nt") === P.nameType)); });
+      $("nick").hidden = P.nameType !== "real";
+      if (P.nameType === "real") $("nick").focus();
+      refreshSubmit();
+    }
+    segs.forEach(function (b) { b.addEventListener("click", function () { if (b.getAttribute("data-nt") === "kakao" && !kakaoName()) return; P.nameType = b.getAttribute("data-nt"); paintSeg(); }); });
+    paintSeg();
     $("submit").addEventListener("click", submitVote);
     $("copyLink").addEventListener("click", function () { copy(pollUrl(P.poll.id), "투표 링크가 복사됐어요 ✓"); });
     $("lockGo").addEventListener("click", function (e) { e.preventDefault(); $("voteCard").scrollIntoView({ behavior: "smooth" }); });
     paintStatic();
   }
 
-  function refreshSubmit() { var s = $("submit"); if (s) s.disabled = !(!P.busy && P.picked && $("nick").value.trim()); }
+  function voterName() { return P.nameType === "real" ? $("nick").value.trim().slice(0, 16) : kakaoName(); }
+  function refreshSubmit() { var s = $("submit"); if (s) s.disabled = !(!P.busy && P.picked && me() && voterName()); }
   function setNote(t, warn) { var n = $("note"); if (!n) return; n.textContent = t || ""; n.className = warn ? "note warn" : "note"; }
 
   function paintStatic() {
@@ -641,14 +710,9 @@
       var at = String(r.created_at || "");
       return { vid: "v" + r.id, own: !!r.mine, nickname: String(r.nickname || "").trim(), choice: r.choice === "daughter" ? "daughter" : "son", message: String(r.message || "").trim(), at: at, late: Date.parse(at) >= cut };
     });
-    // 같은 이름: 마감·발표 전 표가 있으면 그중 최신, 이후 표만 있으면 가장 처음 표
-    var seen = {}, entries = [];
-    raw.forEach(function (v) {
-      var k = nameKey(v.nickname) || ("_" + v.vid); v.key = k;
-      var cur = seen[k];
-      if (!cur) { seen[k] = v; entries.push(v); return; }
-      if (cur.late && (!v.late || Date.parse(v.at) < Date.parse(cur.at))) { entries[entries.indexOf(cur)] = v; seen[k] = v; }
-    });
+    // 카카오 계정당 한 표는 서버가 보장 → 이름이 같아도 다른 사람
+    var entries = [];
+    raw.forEach(function (v) { v.key = v.vid; entries.push(v); });
     P.entries = entries;
     P.mine = null;
     for (var i = 0; i < raw.length; i++) if (raw[i].own) { P.mine = raw[i]; break; }
@@ -767,9 +831,10 @@
 
   function submitVote() {
     if (P.busy || !P.picked) return;
-    var nickname = $("nick").value.trim().slice(0, 16); if (!nickname) return;
+    if (!me()) { login(); return; }
+    var nickname = voterName(); if (!nickname) return;
     P.busy = true; refreshSubmit(); setNote("보내는 중…", false);
-    insert("poll_votes", { poll_id: P.id, vid: P.vid, choice: P.picked, nickname: nickname, message: $("msg").value.trim().slice(0, 80) })
+    insert("poll_votes", { poll_id: P.id, vid: "u" + me().id, user_id: me().id, name_type: P.nameType, choice: P.picked, nickname: nickname, message: $("msg").value.trim().slice(0, 80) })
       .then(function (r) {
         if (!r.ok && r.status !== 409) throw new Error(String(r.status));
         P.busy = false;
@@ -792,7 +857,7 @@
       .then(function (res) {
         if (!res[0]) { app.innerHTML = head("Oops", "관리 링크가 올바르지 않아요", "") + '<p class="foot"><a href="#/">처음으로</a></p>'; return; }
         A.poll = res[0]; A.votes = res[1] || []; A.answer = A.poll.answer;
-        rememberPoll(id, token, A.poll.baby_name);
+        if (token !== "-") rememberPoll(id, token, A.poll.baby_name);
         renderAdmin();
       }).catch(function () { app.innerHTML = head("Oops", "불러오지 못했어요", "잠시 뒤 새로고침해 주세요"); });
   }
@@ -803,7 +868,7 @@
     var cut = cuts.length ? Math.min.apply(null, cuts) : Infinity, seen = {}, entries = [];
     A.votes.forEach(function (r) {
       var v = { nickname: String(r.nickname || "").trim(), choice: r.choice, at: r.created_at, late: Date.parse(r.created_at) >= cut };
-      var k = nameKey(v.nickname) || ("_" + r.id), cur = seen[k];
+      var k = "_" + r.id, cur = seen[k];
       if (!cur) { seen[k] = v; entries.push(v); return; }
       if (cur.late && (!v.late || Date.parse(v.at) < Date.parse(cur.at))) { entries[entries.indexOf(cur)] = v; seen[k] = v; }
     });
@@ -826,8 +891,9 @@
 
       '<section class="card"><div class="card-head"><h2 class="card-title">🔗 링크</h2></div>' +
       '<div class="group"><span class="label">투표 링크 <span class="hint">지인들에게 공유</span></span>' + linkBox("lnkPoll", pollUrl(p.id)) + '</div>' +
+      (A.token === "-" ? '<p class="muted">🔐 카카오 계정으로 관리 중이에요. 같은 카카오 계정으로 로그인하면 어느 폰에서든 관리할 수 있어요.</p>' :
       '<div class="group"><span class="label">관리 링크 <span class="hint">나만 간직</span></span>' + linkBox("lnkAdmin", adminUrl(p.id, A.token)) +
-      '<div class="warnbox">⚠️ 관리 링크는 로그인 대신이에요. 잃어버리면 결과를 공개할 수 없으니 카톡 나에게 보내기 등으로 꼭 저장해 두세요. 남에게 주면 그 사람도 수정할 수 있어요.</div></div>' +
+      '<div class="warnbox">⚠️ 관리 링크는 로그인 대신이에요. ' + (p.owner_id ? '카카오 계정으로도 관리할 수 있지만, 링크도 꼭 저장해 두세요.' : '잃어버리면 결과를 공개할 수 없으니 카톡 나에게 보내기 등으로 꼭 저장해 두세요.') + ' 남에게 주면 그 사람도 수정할 수 있어요.</div></div>') +
       '<div class="share" style="margin-top:14px"><a class="ghost" href="#/p/' + esc(p.id) + '">👀 투표 페이지 보기</a></div></section>' +
 
       '<section class="card"><div class="card-head"><h2 class="card-title">📊 현황</h2></div>' +
@@ -918,6 +984,20 @@
     });
   }
 
+  /* ================= 개인정보 처리방침 ================= */
+  function viewPrivacy() {
+    setTitle("개인정보 처리방침");
+    var li = function (t, d) { return '<div class="group"><b>' + t + '</b><p class="muted" style="margin-top:4px">' + d + '</p></div>'; };
+    app.innerHTML = head("Privacy", "개인정보 처리방침", "") + '<section class="card">' +
+      li("1. 수집하는 항목", "카카오 로그인 시: 카카오 닉네임, 프로필 사진(선택), 이메일(선택), 카카오 회원번호<br>투표 시: 표시 이름(카카오 닉네임 또는 직접 입력한 실명), 선택(딸/아들), 남긴 한마디<br>페이지를 만들 때: 태명, 부모 이름, 소개글, 올린 사진·영상") +
+      li("2. 이용 목적", "한 사람 한 표 투표, 투표 결과·한마디 표시, 페이지 관리(내 페이지 목록), 정답자 명단 정리") +
+      li("3. 보관 기간", "페이지를 삭제하면 그 페이지의 투표·한마디가 함께 지워져요. 로그인 정보는 탈퇴(삭제) 요청 시 지체 없이 지워요.") +
+      li("4. 제3자 제공", "수집한 정보를 다른 곳에 제공하거나 판매하지 않아요. 투표 결과는 해당 페이지 링크를 받은 사람에게만 보여요.") +
+      li("5. 처리 위탁 및 국외 저장", "데이터 저장: Supabase(싱가포르 리전) · 웹 호스팅: Vercel(미국) · 로그인: 카카오") +
+      li("6. 삭제 요청 · 문의", "내 투표나 로그인 정보를 지우고 싶으면 페이지를 만든 분이나 운영자에게 요청해 주세요.") +
+      '<p class="muted">시행일: 2026년 10월 20일</p></section><p class="foot"><a href="#/">← 처음으로</a></p>';
+  }
+
   /* ---------- 라우터 ---------- */
   var timer = null;
   function route() {
@@ -930,11 +1010,24 @@
       timer = setInterval(function () { if (P && P.poll && !document.hidden) refreshPoll(); }, 30000);
     }
     else if (h[0] === "a" && h[1] && h[2]) viewAdmin(h[1], h[2]);
+    else if (h[0] === "privacy") viewPrivacy();
     else viewHome();
   }
   window.addEventListener("hashchange", route);
   document.addEventListener("visibilitychange", function () { if (!document.hidden && P && P.poll) refreshPoll(); });
-  route();
+
+  // 시작: 로그인 복귀(?code=…&next=…) 처리 후 라우팅
+  function boot() {
+    var q = new URLSearchParams(location.search), next = q.get("next");
+    var done = function () {
+      if (next != null || q.get("code")) history.replaceState(null, "", location.pathname + (next || location.hash || "#/"));
+      route();
+    };
+    if (!sbc) return done();
+    sbc.auth.getSession().then(function (r) { SESSION = r && r.data ? r.data.session : null; }).catch(function () {}).then(done);
+    sbc.auth.onAuthStateChange(function (ev, sess) { SESSION = sess; });
+  }
+  boot();
 })();
 </script>
 </body>
