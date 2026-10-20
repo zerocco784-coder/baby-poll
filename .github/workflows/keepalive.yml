@@ -19,7 +19,6 @@ jobs:
           SB: https://wsvlpjnlsxfzfugrbmmz.supabase.co
           KEY: sb_publishable_YFGFGsHJOzPMInie2ehR5g_TV6OybXf
         run: |
-          curl -fsS "$SB/rest/v1/polls_public?select=id&limit=1" -H "apikey: $KEY" -o /dev/null
           curl -fsS "$SB/rest/v1/votes?select=vid&limit=1" -H "apikey: $KEY" -o /dev/null
           echo "ok"
       - name: Record activity (GitHub 60일 비활성 정지 방지)
