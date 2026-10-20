@@ -1,0 +1,33 @@
+name: supabase-keepalive
+
+# 무료 Supabase가 1주일 동안 안 쓰이면 자동 정지되는 걸 막기 위해
+# 3일마다 DB에 가벼운 조회를 한 번 날리고, 레포 활동 기록도 남김
+on:
+  schedule:
+    - cron: "17 0 */3 * *"   # 3일마다 09:17 (KST)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        env:
+          SB: https://wsvlpjnlsxfzfugrbmmz.supabase.co
+          KEY: sb_publishable_YFGFGsHJOzPMInie2ehR5g_TV6OybXf
+        run: |
+          curl -fsS "$SB/rest/v1/polls_public?select=id&limit=1" -H "apikey: $KEY" -o /dev/null
+          curl -fsS "$SB/rest/v1/votes?select=vid&limit=1" -H "apikey: $KEY" -o /dev/null
+          echo "ok"
+      - name: Record activity (GitHub 60일 비활성 정지 방지)
+        uses: actions/checkout@v4
+      - run: |
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > .keepalive
+          git config user.name "keepalive-bot"
+          git config user.email "keepalive-bot@users.noreply.github.com"
+          git add .keepalive
+          git commit -m "keepalive" || exit 0
+          git push
